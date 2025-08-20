@@ -1,0 +1,14 @@
+{
+  "name": "fullstack-project",
+  "private": true,
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  },
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix ./client\" \"npm run dev --prefix ./server\"",
+    "install-all": "npm install && cd client && npm install && cd ../server && npm install"
+  },
+  "dependencies": {
+    "redux-persist": "^6.0.0"
+  }
+}
