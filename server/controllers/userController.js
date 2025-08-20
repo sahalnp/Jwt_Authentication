@@ -7,6 +7,8 @@ export const login= async(req, res) => {
      try {
         const data = req.body;   
         const user = await User.findOne({ email: data.email });
+        
+        
         if (!user) {
             return res.status(400).json({ success: false, message: "User not found" });
         }
@@ -22,6 +24,7 @@ export const login= async(req, res) => {
             userId: user._id,
             email: user.email,
         }
+        
         const accessToken = generateAccessToken(payload)
         const refreshToken = generateRefreshToken(payload);
         setCookie(res, accessToken,refreshToken);
@@ -45,9 +48,13 @@ export const signup = async (req, res) => {
     }
 }
 export const logout = (req, res) => {
-  res.clearCookie("accesstoken");
-  res.clearCookie("refreshtoken");
-  res.status(200).json({ success: true, message: "User logged out" });
+  try {
+    res.clearCookie("accesstoken");
+    res.clearCookie("refreshtoken");
+    res.status(200).json({ success: true, message: "User logged out" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
 };
 export const getEmail = async (req, res) => {
     const user=await User.findOne({ _id: req.user._id });

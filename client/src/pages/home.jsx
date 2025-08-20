@@ -1,41 +1,70 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import axiosInstance from "../axios/axiosInstance";
 import refreshToken from "../utils/refreshToken";
-export default function Home() {
-    const { user } = useSelector((state) => state.user);
-    const navigate = useNavigate();
-    const [email, setEmail] = useState("");
-    useEffect(async () => {
-        try {
-            const res = await axiosInstance.get("/auth/email");
-            setEmail(res.data.email);
-        } catch (error) {
-            if (error.response.status === 401) {
-                navigate("/login");
-            }
-            if (error.response.status === 403) {
-                try {
-                    const newRes = await refreshToken();
-                    setEmail(newRes.data.email);
-                } catch (error) {
-                    navigate("/login");
-                }
-            }
-        }
-    }, []);
+import showToast from "../utils/showToast";
+import { clearUser } from "../features/userSlice";
+import { useDispatch } from "react-redux";
 
-    return (
-        <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-green-100 via-teal-50 to-cyan-100">
-            <div className="rounded-2xl bg-white px-10 py-12 shadow-xl">
-                <h1 className="text-3xl font-bold text-gray-800">Hi</h1>
-                <h1>hello {email}</h1>
-                <p className="mt-2 text-gray-600">Welcome to your dashboard.</p>
-                user ? ( ) : (<span className="text-gray-600">{user.name}</span>
-                )
-                <button className="mt-4 rounded bg-blue-500 px-4 py-2 text-white">
-                    Logout
-                </button>
-            </div>
-        </main>
-    );
+export default function Home() {
+  const { user } = useSelector((state) => state.user);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+
+  const handleLogout = async () => {
+    try {
+      const response = await axiosInstance.get("/auth/logout");
+      dispatch(clearUser());
+      showToast(response.data.message || "Logged out successfully", "success");
+      navigate("/login");
+    } catch (error) {
+      showToast(error.response?.data?.message || "Something went wrong", "error");
+    }
+  };
+
+  useEffect(() => {
+    const fetchEmail = async () => {
+      try {
+        const res = await axiosInstance.get("/auth/email");
+        setEmail(res.data.email);
+        showToast("Welcome back!", "success");
+      } catch (error) {
+        if (error.response?.status === 401) {
+          showToast("Unauthorized. Please login again.", "error");
+          navigate("/login");
+        } else if (error.response?.status === 403) {
+          try {
+            const newRes = await refreshToken();
+            setEmail(newRes.data.email);
+            showToast("Session refreshed!", "success");
+          } catch (err) {
+            showToast("Session expired. Please login again.", "error");
+            navigate("/login");
+          }
+        } else {
+          showToast("Something went wrong", "error");
+        }
+      }
+    };
+
+    fetchEmail();
+  }, [navigate]);
+
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-green-100 via-teal-50 to-cyan-100">
+      <div className="rounded-2xl bg-white px-10 py-12 shadow-xl">
+        <h1 className="text-3xl font-bold text-gray-800">Hi</h1>
+        <h2 className="mt-1 text-gray-700">{user.name}</h2>
+        <p className="mt-2 text-gray-600">Welcome to your dashboard.</p>
+        <button
+          className="mt-4 rounded bg-blue-500 px-4 py-2 text-white"
+          onClick={handleLogout}
+        >
+          Logout
+        </button>
+      </div>
+    </main>
+  );
 }
