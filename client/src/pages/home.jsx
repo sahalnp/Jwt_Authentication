@@ -5,7 +5,6 @@ import axiosInstance from "../axios/axiosInstance";
 import refreshToken from "../utils/refreshToken";
 import showToast from "../utils/showToast";
 import { clearUser } from "../features/userSlice";
-import { useDispatch } from "react-redux";
 
 export default function Home() {
   const { user } = useSelector((state) => state.user);
@@ -15,12 +14,15 @@ export default function Home() {
 
   const handleLogout = async () => {
     try {
-      const response = await axiosInstance.get("/auth/logout");
+      const response = await axiosInstance.post("/auth/logout");
       dispatch(clearUser());
       showToast(response.data.message || "Logged out successfully", "success");
       navigate("/login");
     } catch (error) {
-      showToast(error.response?.data?.message || "Something went wrong", "error");
+      showToast(
+        error.response?.data?.message || "Something went wrong",
+        "error"
+      );
     }
   };
 
@@ -29,18 +31,19 @@ export default function Home() {
       try {
         const res = await axiosInstance.get("/auth/email");
         setEmail(res.data.email);
-        showToast("Welcome back!", "success");
       } catch (error) {
         if (error.response?.status === 401) {
-          showToast("Unauthorized. Please login again.", "error");
+          showToast("Unauthorized. Please login.", "error");
+          dispatch(clearUser());
           navigate("/login");
         } else if (error.response?.status === 403) {
           try {
-            const newRes = await refreshToken();
-            setEmail(newRes.data.email);
-            showToast("Session refreshed!", "success");
+            await refreshToken();
+            const res = await axiosInstance.get("/auth/email");
+            setEmail(res.data.email);
           } catch (err) {
             showToast("Session expired. Please login again.", "error");
+            dispatch(clearUser());
             navigate("/login");
           }
         } else {
@@ -50,13 +53,13 @@ export default function Home() {
     };
 
     fetchEmail();
-  }, [navigate]);
+  }, [dispatch, navigate]);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-green-100 via-teal-50 to-cyan-100">
       <div className="rounded-2xl bg-white px-10 py-12 shadow-xl">
-        <h1 className="text-3xl font-bold text-gray-800">Hi</h1>
-        <h2 className="mt-1 text-gray-700">{user.name}</h2>
+        <h1 className="text-3xl font-bold text-gray-800">Hi {email}</h1>
+        <h2 className="mt-1 text-gray-700">{user?.name}</h2>
         <p className="mt-2 text-gray-600">Welcome to your dashboard.</p>
         <button
           className="mt-4 rounded bg-blue-500 px-4 py-2 text-white"
