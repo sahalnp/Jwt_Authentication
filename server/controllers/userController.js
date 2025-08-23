@@ -115,11 +115,23 @@ export const googleCallback = async (req, res) => {
     const accessToken = generateAccessToken(req.user);
     const refreshToken = generateRefreshToken(req.user);
 
-    setCookie(res, accessToken, refreshToken);
-    const userData = await User.findById(req.user._id).select("-password");
-   res.redirect('http://localhost:5173/auth/google/success'); 
+    setCookie(res, accessToken, refreshToken);;
+   res.redirect('http://localhost:5173/auth/success'); 
   } catch (error) {
     console.error("Google OAuth error:", error);
+    res.redirect("http://localhost:5173/login?error=oauth_failed");
+  }
+};
+export const githubCallback = (req, res) => {
+  try {
+    // Generate tokens
+    const accessToken = generateAccessToken(req.user);
+    const refreshToken = generateRefreshToken(req.user);
+    setCookie(res, accessToken, refreshToken);
+
+    res.redirect("http://localhost:5173/auth/success");
+  } catch (error) {
+    console.error("GitHub OAuth error:", error);
     res.redirect("http://localhost:5173/login?error=oauth_failed");
   }
 };
