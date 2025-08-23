@@ -5,6 +5,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import PrivateRouter from "./PrivateRouter";
 import PublicRoute from "./PublicRouter";
 import Home from "../pages/home";
+import GoogleSuccess from "../components/googleSuccess";
 
 const router = createBrowserRouter([
     {
@@ -30,6 +31,10 @@ const router = createBrowserRouter([
                 <SignupPage />
             </PublicRoute>
         ),
+    },
+    {
+        path: "/auth/google/success",
+        element: <GoogleSuccess />,
     },
 ]);
 

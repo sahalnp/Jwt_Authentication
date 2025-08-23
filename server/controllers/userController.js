@@ -73,10 +73,9 @@ export const signup = async (req, res) => {
 };
 export const logout = async (req, res) => {
     try {
-        const result = await TokenModel.deleteOne({ userId: req.user._id });
+        await TokenModel.deleteOne({ userId: req.user._id });
         res.cookie("accesstoken", "", { maxAge: 0 });
         res.cookie("refreshtoken", "", { maxAge: 0 });
-
         res.status(200).json({ success: true, message: "User logged out" });
     } catch (error) {
         res.status(500).json({
@@ -95,4 +94,32 @@ export const getEmail = async (req, res) => {
             message: "Internal server error",
         });
     }
+};
+export const getCurrentUser = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userData = await User.findById(req.user._id).select("-password");
+    res.status(200).json({ success: true, user: userData });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Something went wrong" });
+  }
+};
+export const googleCallback = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.redirect("http://localhost:5173/login?error=oauth_failed");
+    }
+    const accessToken = generateAccessToken(req.user);
+    const refreshToken = generateRefreshToken(req.user);
+
+    setCookie(res, accessToken, refreshToken);
+    const userData = await User.findById(req.user._id).select("-password");
+   res.redirect('http://localhost:5173/auth/google/success'); 
+  } catch (error) {
+    console.error("Google OAuth error:", error);
+    res.redirect("http://localhost:5173/login?error=oauth_failed");
+  }
 };
