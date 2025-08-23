@@ -33,7 +33,7 @@ export const generateAccessToken = (user) => {
       uniqueId: accessUniqueId,
     },
     process.env.JWT_SECRET,
-    { expiresIn: "5s" } // ⏳ access token valid for 5 seconds
+    { expiresIn: "15s" } 
   );
 };
 
@@ -47,6 +47,6 @@ export const generateRefreshToken = (user) => {
       uniqueId: refreshUniqueId,
     },
     process.env.REFRESH_SECRET,
-    { expiresIn: "15m" } // ⏳ refresh token valid for 15 seconds
+    { expiresIn: "30s" } 
   );
 };

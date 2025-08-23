@@ -27,15 +27,15 @@ export const login = async (req, res) => {
             name: user.name,
             email: user.email,
         };
-        const payload = {
-            userId: user._id,
-            email: user.email,
-        };
 
         const accessToken = generateAccessToken(user);
         const refreshToken = generateRefreshToken(user);
         setCookie(res, accessToken, refreshToken);
-        await TokenModel.create({ userId: user._id, refreshtoken: refreshToken });
+        await TokenModel.create({
+            userId: user._id,
+            refreshtoken: refreshToken,
+        });
+
         res.status(200).json({
             success: true,
             message: "User logged in",
@@ -73,7 +73,10 @@ export const signup = async (req, res) => {
 };
 export const logout = async (req, res) => {
     try {
-        // await TokenModel.deleteMany({ userId: req.user._id });
+        const result = await TokenModel.deleteOne({ userId: req.user._id });
+        res.cookie("accesstoken", "", { maxAge: 0 });
+        res.cookie("refreshtoken", "", { maxAge: 0 });
+
         res.status(200).json({ success: true, message: "User logged out" });
     } catch (error) {
         res.status(500).json({

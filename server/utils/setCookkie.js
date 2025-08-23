@@ -3,12 +3,12 @@ export const setCookie = (res, accesstoken, refreshtoken) => {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
-        maxAge: 5 * 1000,
+        maxAge: 15 * 1000,
     });
     res.cookie("refreshtoken", refreshtoken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
-        maxAge: 50 * 1000,
+        maxAge: 30 * 1000,
     });
 };

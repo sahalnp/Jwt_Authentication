@@ -1,79 +1,161 @@
+
+// import jwt from "jsonwebtoken";
+// import { setCookie } from "../utils/setCookkie.js";
+// import { generateAccessToken } from "../utils/TokenGenerate.js";
+// // import TokenModel from "../models/TokenModel.js";
+
+// const verifyTokens = async (req, res, next) => {
+//     try {
+//         const accessToken = req.cookies.accesstoken;
+//         const refreshToken = req.cookies.refreshtoken;
+
+//         if (!refreshToken) {
+//             return res.status(401).json({
+//                 success: false,
+//                 message: "Refresh token missing. Please login.",
+//             });
+//         }
+//         const tokenDoc = await TokenModel.findOne({
+//             refreshtoken: refreshToken,
+//         });
+//         if (!tokenDoc) {
+//             return res
+//                 .status(401)
+//                 .json({
+//                     success: false,
+//                     message: "Invalid or logged-out refresh token.",
+//                 });
+//         }
+
+//         // ✅ Verify refresh token first
+//         let refreshUser;
+//         try {
+//             refreshUser = jwt.verify(refreshToken, process.env.REFRESH_SECRET);
+//         } catch (err) {
+//             res.cookie("accesstoken", "", { maxAge: 0 });
+//             res.cookie("refreshtoken", "", { maxAge: 0 });
+
+//             return res.status(401).json({
+//                 success: false,
+//                 message: "Refresh token expired or invalid. Please login.",
+//             });
+//         }
+
+//         // ✅ If no access token, issue new one
+//         if (!accessToken) {
+//             const newAccessToken = generateAccessToken({
+//                 _id: refreshUser._id,
+//                 email: refreshUser.email,
+//             });
+
+//             setCookie(res, newAccessToken, refreshToken); // keep refresh token
+//             req.user = { _id: refreshUser._id, email: refreshUser.email };
+//             return next();
+//         }
+
+//         // ✅ Verify access token
+//         try {
+//             const user = jwt.verify(accessToken, process.env.JWT_SECRET);
+//             req.user = { _id: user._id, email: user.email };
+//             return next();
+//         } catch (err2) {
+//             if (err2.name === "TokenExpiredError") {
+//                 // ♻️ Access token expired → issue new one using refresh
+//                 const newAccessToken = generateAccessToken({
+//                     _id: refreshUser._id,
+//                     email: refreshUser.email,
+//                 });
+
+//                 setCookie(res, newAccessToken, refreshToken); // keep refresh token
+//                 req.user = { _id: refreshUser._id, email: refreshUser.email };
+//                 return next();
+//             }
+
+//             return res.status(403).json({
+//                 success: false,
+//                 message: "Invalid access token.",
+//             });
+//         }
+//     } catch (err) {
+//         console.error("verifyTokens error:", err);
+//         return res.status(500).json({
+//             success: false,
+//             message: "Internal server error",
+//         });
+//     }
+// };
+
+// export default verifyTokens;
+
+
+
 import jwt from "jsonwebtoken";
 import { setCookie } from "../utils/setCookkie.js";
 import { generateAccessToken } from "../utils/TokenGenerate.js";
 import TokenModel from "../models/TokenModel.js";
 
 const verifyTokens = async (req, res, next) => {
-  const accessToken = req.cookies.accesstoken;
-  const refreshToken = req.cookies.refreshtoken;
-
-  if (!refreshToken) {
-    res.clearCookie("accesstoken");
-    res.clearCookie("refreshtoken");
-    return res.status(401).json({ message: "Refresh token missing. Please login." });
-  }
-
   try {
-    // 🔍 Step 1: Check if refresh token exists in DB
-    // const tokenDoc = await TokenModel.findOne({ refreshtoken: refreshToken });
-    // if (!tokenDoc) {
-    //   return res.status(401).json({ message: "Invalid or logged-out refresh token." });
-    // }
+    const accessToken = req.cookies.accesstoken;
+    const refreshToken = req.cookies.refreshtoken;
 
-    // 🔍 Step 2: Verify refresh token (check expiry)
-    jwt.verify(refreshToken, process.env.REFRESH_SECRET, async (err, refreshUser) => {
-      if (err) {
-        if (err === "TokenExpiredError") {
-            console.log("sdjfklsdjfklsdjflkdsjfkldsfjkldsjfklsjfklds");
-            
-          res.clearCookie("accesstoken");
-          res.clearCookie("refreshtoken");
-        //   await TokenModel.deleteOne({ refreshtoken: refreshToken });
-          return res.status(401).json({ message: "Refresh token expired. Please login." });
-        }
-        res.clearCookie("accesstoken");
-        res.clearCookie("refreshtoken");
-        // await TokenModel.deleteOne({ refreshtoken: refreshToken });
-        return res.status(401).json({ message: "Refresh token expired. Please login." });
-      }
+    if (!refreshToken) {
+      res.cookie("accesstoken", "", { maxAge: 0 });
+      return res.status(401).json({
+        success: false,
+        message: "Refresh token missing. Please login.",
+      });
+    }
+    const tokenDoc = await TokenModel.findOne({ refreshtoken: refreshToken });
+    let refreshUser;
+    try {
+      refreshUser = jwt.verify(refreshToken, process.env.REFRESH_SECRET);
+    } catch (err) {
+      await TokenModel.deleteOne({ refreshtoken: refreshToken });
+      res.cookie("accesstoken", "", { maxAge: 0 });
+      res.cookie("refreshtoken", "", { maxAge: 0 });
 
-      // 🟢 No access token? → issue new one
-      if (!accessToken) {
+      return res.status(401).json({
+        success: false,
+        message: "Refresh token expired or invalid. Please login.",
+      });
+    }
+    if (!accessToken) {
+      const newAccessToken = generateAccessToken({
+        _id: refreshUser._id,
+        email: refreshUser.email,
+      });
+
+      setCookie(res, newAccessToken, refreshToken); 
+      req.user = { _id: refreshUser._id, email: refreshUser.email };
+      return next();
+    }
+    try {
+      const user = jwt.verify(accessToken, process.env.JWT_SECRET);
+      req.user = { _id: user._id, email: user.email };
+      return next();
+    } catch (err2) {
+      if (err2.name === "TokenExpiredError") {
         const newAccessToken = generateAccessToken({
           _id: refreshUser._id,
           email: refreshUser.email,
         });
-
-        setCookie(res, newAccessToken);
+        setCookie(res, newAccessToken, refreshToken);
         req.user = { _id: refreshUser._id, email: refreshUser.email };
         return next();
       }
 
-      // 🔍 Step 3: Verify access token
-      jwt.verify(accessToken, process.env.JWT_SECRET, async (err2, user) => {
-        if (err2) {
-          if (err2.name === "TokenExpiredError") {
-            // ♻️ Access expired → issue new one using refresh
-            const newAccessToken = generateAccessToken({
-              _id: refreshUser._id,
-              email: refreshUser.email,
-            });
-
-            setCookie(res, newAccessToken);
-            req.user = { _id: refreshUser._id, email: refreshUser.email };
-            return next();
-          }
-          return res.status(403).json({ message: "Invalid access token." });
-        }
-
-        // ✅ Access token valid
-        req.user = { _id: user._id, email: user.email };
-        next();
+      return res.status(403).json({
+        success: false,
+        message: "Invalid access token.",
       });
-    });
+    }
   } catch (err) {
     console.error("verifyTokens error:", err);
-    res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
 };
 

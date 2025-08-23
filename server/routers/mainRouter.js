@@ -5,7 +5,7 @@ const mainRouter = express.Router();
 
 mainRouter.post("/auth/signup", signup);
 mainRouter.post("/auth/login", login);
-mainRouter.post("/auth/logout", logout);
+mainRouter.post("/auth/logout", verifyTokens,logout);
 mainRouter.get("/auth/email", verifyTokens, getEmail);
 
 export default mainRouter;
