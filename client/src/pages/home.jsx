@@ -36,16 +36,6 @@ export default function Home() {
           showToast("Unauthorized. Please login.", "error");
           dispatch(clearUser());
           navigate("/login");
-        } else if (error.response?.status === 403) {
-          try {
-            await refreshToken();
-            const res = await axiosInstance.get("/auth/email");
-            setEmail(res.data.email);
-          } catch (err) {
-            showToast("Session expired. Please login again.", "error");
-            dispatch(clearUser());
-            navigate("/login");
-          }
         } else {
           showToast("Something went wrong", "error");
         }

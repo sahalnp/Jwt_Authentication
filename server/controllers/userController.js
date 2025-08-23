@@ -73,9 +73,7 @@ export const signup = async (req, res) => {
 };
 export const logout = async (req, res) => {
     try {
-        res.clearCookie("accesstoken");
-        res.clearCookie("refreshtoken");
-        await TokenModel.deleteMany({ userId: req.user._id });
+        // await TokenModel.deleteMany({ userId: req.user._id });
         res.status(200).json({ success: true, message: "User logged out" });
     } catch (error) {
         res.status(500).json({

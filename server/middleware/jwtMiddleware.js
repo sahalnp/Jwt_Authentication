@@ -8,25 +8,32 @@ const verifyTokens = async (req, res, next) => {
   const refreshToken = req.cookies.refreshtoken;
 
   if (!refreshToken) {
+    res.clearCookie("accesstoken");
+    res.clearCookie("refreshtoken");
     return res.status(401).json({ message: "Refresh token missing. Please login." });
   }
 
   try {
     // 🔍 Step 1: Check if refresh token exists in DB
-    const tokenDoc = await TokenModel.findOne({ refreshtoken: refreshToken });
-    if (!tokenDoc) {
-      return res.status(401).json({ message: "Invalid or logged-out refresh token." });
-    }
+    // const tokenDoc = await TokenModel.findOne({ refreshtoken: refreshToken });
+    // if (!tokenDoc) {
+    //   return res.status(401).json({ message: "Invalid or logged-out refresh token." });
+    // }
 
     // 🔍 Step 2: Verify refresh token (check expiry)
     jwt.verify(refreshToken, process.env.REFRESH_SECRET, async (err, refreshUser) => {
       if (err) {
-        if (err.name === "TokenExpiredError") {
-          setCookie(res, "", "", -1); 
-          await TokenModel.deleteOne({ refreshtoken: refreshToken });
+        if (err === "TokenExpiredError") {
+            console.log("sdjfklsdjfklsdjflkdsjfkldsfjkldsjfklsjfklds");
+            
+          res.clearCookie("accesstoken");
+          res.clearCookie("refreshtoken");
+        //   await TokenModel.deleteOne({ refreshtoken: refreshToken });
           return res.status(401).json({ message: "Refresh token expired. Please login." });
         }
-        await TokenModel.deleteOne({ refreshtoken: refreshToken });
+        res.clearCookie("accesstoken");
+        res.clearCookie("refreshtoken");
+        // await TokenModel.deleteOne({ refreshtoken: refreshToken });
         return res.status(401).json({ message: "Refresh token expired. Please login." });
       }
 
